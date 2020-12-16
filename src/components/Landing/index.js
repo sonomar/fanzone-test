@@ -26,6 +26,10 @@ class LandingBase extends Component {
 		  lastName: '',
 		  profilePic: '',
 		  friendEmail: '',
+		  allInputs: {imgUrl: ''},
+		  imageAsFile: '',
+		  imageAsUrl: '',
+		  setImageAsUrl: '',  
   		};
  	}
 
@@ -38,6 +42,37 @@ class LandingBase extends Component {
 	   }
 	   return result;
 	} 
+
+	handleImageAsFile = event => {
+		const image = event.target.files[0];
+		const { imageAsFile } = this.state;
+		this.setState({imageAsFile: image});
+	}
+
+	handleFireBaseUpload = event => {
+	  event.preventDefault()
+	  console.log('start of upload')
+	  if(this.state.imageAsFile === '' ) {
+      	console.error('not an image, the image file is a ${typeof(imageAsFile)}')
+	  }
+	  const uploadTask = this.props.firebase.storage.ref(`/images/${this.state.imageAsFile.name}`).put(this.state.imageAsFile)
+	   uploadTask.on('state_changed', 
+	    (snapShot) => {
+	      //takes a snap shot of the process as it is happening
+	      console.log(snapShot)
+	    }, (err) => {
+	      //catches the errors
+	      console.log(err)
+	    }, () => {
+	      // gets the functions from storage refences the image storage in firebase by the children
+	      // gets the download url then sets the image from firebase as the value for the imgUrl key:
+	      this.props.firebase.storage.ref('images').child(this.state.imageAsFile.name).getDownloadURL()
+	       .then(fireBaseUrl => {
+	       	 const { imageAsUrl } = this.state;
+	         this.setState({imageAsUrl: fireBaseUrl});
+     }) }
+    )
+	}
 
 	 onSubmitEmail = event => {
 	 	const code = this.makeId(8);
@@ -106,6 +141,8 @@ class LandingBase extends Component {
 	    event.preventDefault();
 	  }
 
+
+
 	render() {
 		const {
 	      email,
@@ -118,6 +155,8 @@ class LandingBase extends Component {
 	      profilePic,
 	      friendEmail,
 	    } = this.state;
+
+	    console.log(this.state.imageAsFile)
 
 	 	return (
 		 	<React.Fragment>	
@@ -197,7 +236,12 @@ class LandingBase extends Component {
 		        {error && <p>{error.message}</p>}
 		      </form>
 
-		      <button>Upload Image</button>
+		      <form onSubmit={this.handleFireBaseUpload}>
+		      	<input type="file"  onChange={this.handleImageAsFile}/>
+		      	<button>upload to firebase</button>
+		      </form>
+
+		      <img src={this.state.imageAsUrl} alt="image tag" />
 
 		    </React.Fragment>
 		);
