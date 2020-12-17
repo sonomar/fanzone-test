@@ -4,10 +4,23 @@ import { compose } from 'recompose';
 
 import { withFirebase } from '../Firebase'; 
 import * as ROUTES from '../../constants/routes';
+import { Plugins } from '@capacitor/core';
+import {
+    IonPage,
+    IonContent,
+    IonHeader,
+    IonTitle,
+    IonToolbar,
+    button,
+    IonCol,
+    IonRow,
+    IonInput,
+    IonText,
+} from '@ionic/react';
  
 const Landing = () => (
   <div>
-    <h1>Landing</h1>
+    <IonTitle>Landing</IonTitle>
     <LandingForm />
   </div>
 );
@@ -20,7 +33,7 @@ class LandingBase extends Component {
 	      email: '',
 	      code: '',
 		  error: null,
-		  team: '',
+		  team: [],
 		  prize: '',
 		  firstName: '',
 		  lastName: '',
@@ -29,7 +42,10 @@ class LandingBase extends Component {
 		  allInputs: {imgUrl: ''},
 		  imageAsFile: '',
 		  imageAsUrl: '',
-		  setImageAsUrl: '',  
+		  setImageAsUrl: '',
+		  imagePrefix: '',
+		  imageFileName: '',
+		  showAll: false,  
   		};
  	}
 
@@ -51,7 +67,7 @@ class LandingBase extends Component {
 
 	handleFireBaseUpload = event => {
 	  event.preventDefault()
-	  console.log('start of upload')
+	  const code = window.localStorage.getItem('userCode');
 	  if(this.state.imageAsFile === '' ) {
       	console.error('not an image, the image file is a ${typeof(imageAsFile)}')
 	  }
@@ -67,21 +83,29 @@ class LandingBase extends Component {
 	      // gets the functions from storage refences the image storage in firebase by the children
 	      // gets the download url then sets the image from firebase as the value for the imgUrl key:
 	      this.props.firebase.storage.ref('images').child(this.state.imageAsFile.name).getDownloadURL()
-	       .then(fireBaseUrl => {
-	       	 const { imageAsUrl } = this.state;
-	         this.setState({imageAsUrl: fireBaseUrl});
+	       .then(profilePicUrl => {
+	       	 const { imageAsUrl, imageAsFile } = this.state;
+	         this.setState({imageAsUrl: profilePicUrl});
+	            this.props.firebase.user(code).update({
+		        profilePicUrl,
+		     })
+		    .catch(error => {
+			    this.setState({ error });
+			    console.log(error);
+			});
      }) }
     )
 	}
 
 	 onSubmitEmail = event => {
 	 	const code = this.makeId(8);
-		const { email } = this.state;
+		const { email, showAll } = this.state;
 	     this.props.firebase.user(code).set({
 	     	email,
 	     })
-	  	.then(function() {
+	  	.then(result => {
     		window.localStorage.setItem('userCode', code);
+    		this.setState({showAll: true});
   		})
 	    .catch(error => {
 		    this.setState({ error });
@@ -94,6 +118,21 @@ class LandingBase extends Component {
  
 	 onChange = event => {
 	    this.setState({ [event.target.name]: event.target.value });
+	 };
+
+	 onChangeTeam = event => {
+	 	console.log(this.state.team);
+	 	let teamsArray = this.state.team;
+	 	if(event.target.checked == true) {
+	 		teamsArray.push(event.target.value)
+	 	}
+	 	else {
+	 		teamsArray = teamsArray.filter(function(element) {
+	 			return element != event.target.value;
+	 		});
+	 	}
+	 	console.log(teamsArray);
+	    this.setState({ team: teamsArray.sort() });
 	 };
 
 	 onSubmitTeam = event => {
@@ -154,6 +193,7 @@ class LandingBase extends Component {
 	      lastName,
 	      profilePic,
 	      friendEmail,
+	      showAll,
 	    } = this.state;
 
 	    console.log(this.state.imageAsFile)
@@ -176,72 +216,90 @@ class LandingBase extends Component {
 		        {error && <p>{error.message}</p>}
 		      </form>
 
-		      <form onSubmit={this.onSubmitTeam} name="team">
+		      {   this.state.showAll &&
+		      	  <React.Fragment>	
+			      <form onSubmit={this.onSubmitTeam} name="team">
 
-				<label>Choose a team:</label>
-				<div id="teams">
-				  <input type="radio" name="team" value="Berlin" onChange={this.onChange} />
-				   <label>Berlin</label>
-				  <input type="radio" name="team" value="Cologne" onChange={this.onChange} />
-				   <label>Cologne</label>
-				  <input type="radio" name="team" value="Frankfurt" onChange={this.onChange} />
-				   <label>Frankfurt</label>
-				 </div>
-		          <button type="submit">
-		          Submit Team
-		        </button>
-		 
-		        {error && <p>{error.message}</p>}
-		      </form>
+					<label>Choose a team:</label>
+					<div id="teams">
+						  <div className="team_radio">
+							  <input type="checkbox" name="team" value="Berlin" onChange={this.onChangeTeam} />
+							  <label>Berlin</label>
+					      </div>
+						  <div className="team_radio">
+							  <input type="checkbox" name="team" value="Cologne" onChange={this.onChangeTeam} />
+							  <label>Cologne</label>
+					      </div>
+						  <div className="team_radio">
+							  <input type="checkbox" name="team" value="Frankfurt" onChange={this.onChangeTeam} />
+							  <label>Frankfurt</label>
+					      </div>
+					 </div>
+			          <button type="submit">
+			          Submit Team
+			        </button>
+			 
+			        {error && <p>{error.message}</p>}
+			      </form>
 
-		       <form onSubmit={this.onSubmitPrize} name="prize">
+			       <form onSubmit={this.onSubmitPrize} name="prize">
 
-				<label>Choose a team:</label>
-				<div id="teams">
-				  <input type="radio" name="prize" value="Card" onChange={this.onChange} />
-				   <label>Card</label>
-				  <input type="radio" name="prize" value="Hat" onChange={this.onChange} />
-				   <label>Hat</label>
-				  <input type="radio" name="prize" value="Sticker" onChange={this.onChange} />
-				   <label>Sticker</label>
-				 </div>
-		          <button type="submit">
-		          Submit Prize
-		        </button>
-		 
-		        {error && <p>{error.message}</p>}
-		      </form>
+					<label>Choose a Prize:</label>
+					<div id="prizes">
+					   <div className="prize_radio">
+						   <input type="radio" name="prize" value="Card" onChange={this.onChange} />
+						   <label>Card</label>
+					   </div>
+					   <div className="prize_radio">
+						   <input type="radio" name="prize" value="Hat" onChange={this.onChange} />
+						   <label>Hat</label>
+					   </div>
+					   <div className="prize_radio">
+						   <input type="radio" name="prize" value="Sticker" onChange={this.onChange} />
+						   <label>Sticker</label>
+					   </div>
+					 </div>
+			          <button type="submit">
+			          Submit Prize
+			        </button>
+			 
+			        {error && <p>{error.message}</p>}
+			      </form>
 
-		      <form onSubmit={this.onSubmitName}>
-		        <input
-		          name="firstName"
-		          value={firstName}
-		          onChange={this.onChange}
-		          type="text"
-		          placeholder="First Name"
-		        />
+			      <form onSubmit={this.onSubmitName}>
+			        <input
+			          name="firstName"
+			          value={firstName}
+			          onChange={this.onChange}
+			          type="text"
+			          placeholder="First Name"
+			        />
 
-		        <input
-		          name="lastName"
-		          value={lastName}
-		          onChange={this.onChange}
-		          type="text"
-		          placeholder="Last Name"
-		        />
-		  
-		        <button type="submit">
-		          Submit Name
-		        </button>
-		 
-		        {error && <p>{error.message}</p>}
-		      </form>
+			        <input
+			          name="lastName"
+			          value={lastName}
+			          onChange={this.onChange}
+			          type="text"
+			          placeholder="Last Name"
+			        />
+			  
+			        <button type="submit">
+			          Submit Name
+			        </button>
+			 
+			        {error && <p>{error.message}</p>}
+			      </form>
 
-		      <form onSubmit={this.handleFireBaseUpload}>
-		      	<input type="file"  onChange={this.handleImageAsFile}/>
-		      	<button>upload to firebase</button>
-		      </form>
+			      <form onSubmit={this.handleFireBaseUpload}>
+			      	<input type="file"  onChange={this.handleImageAsFile}/>
+			      	<button>upload to firebase</button>
+			      </form>
 
-		      <img src={this.state.imageAsUrl} alt="image tag" />
+			      <img src={this.state.imageAsUrl} alt="image tag" />
+
+			      </React.Fragment>	
+
+		     }
 
 		    </React.Fragment>
 		);

@@ -1,0 +1,13 @@
+{
+  "appId": "com.fanzone.app",
+  "appName": "testapp",
+  "bundledWebRuntime": false,
+  "npmClient": "yarn",
+  "webDir": "src",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  },
+  "cordova": {}
+}
