@@ -28,7 +28,7 @@ class SignUpFormBase extends Component {
   }
  
   onSubmit = event => {
-	const { email, code } = this.state;
+	const { email } = this.state;
  
      this.props.firebase
       .doSendSignInLinkToEmail(email)
@@ -85,6 +85,7 @@ console.log(this.props.firebase.checkSignInToEmailLink(window.location.href));
      //  username === '';
 
     return (
+      <React.Fragment>
       <form onSubmit={this.onSubmit}>
 
         <input
@@ -101,6 +102,7 @@ console.log(this.props.firebase.checkSignInToEmailLink(window.location.href));
  
         {error && <p>{error.message}</p>}
       </form>
+      </React.Fragment>
     );
   }
 }
