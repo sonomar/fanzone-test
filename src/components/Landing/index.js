@@ -101,7 +101,7 @@ class LandingBase extends Component {
 	 	const code = this.makeId(8);
 		const { email, showAll } = this.state;
 	     this.props.firebase.user(code).set({
-	     	email,
+	     	email, sports: 'soccer', username: this.state.email,
 	     })
 	  	.then(result => {
     		window.localStorage.setItem('userCode', code);
